@@ -82,20 +82,23 @@
 			PaneDisplayMode="Left"
 			SelectionChanged="MainSettingsNavigationView_SelectionChanged">
 
-			<NavigationView.Header>
+			<NavigationView.AutoSuggestBox>
 				<AutoSuggestBox
-					PlaceholderText="Search settings..."
+					x:Name="NavViewSearchBox"
+					PlaceholderText="Search"
+					QueryIcon="Find"
 					QuerySubmitted="AutoSuggestBox_QuerySubmitted"
 					TextChanged="AutoSuggestBox_TextChanged">
 					<AutoSuggestBox.ItemTemplate>
 						<DataTemplate>
-							<StackPanel Orientation="Horizontal">
-								<TextBlock FontWeight="Bold" Text="{Binding}" />
-							</StackPanel>
+							<TextBlock
+								Padding="0,8,0,8"
+								Text="{Binding}"
+								TextWrapping="Wrap" />
 						</DataTemplate>
 					</AutoSuggestBox.ItemTemplate>
 				</AutoSuggestBox>
-			</NavigationView.Header>
+			</NavigationView.AutoSuggestBox>
 
 			<!--  Menu Items  -->
 			<NavigationView.MenuItems>
