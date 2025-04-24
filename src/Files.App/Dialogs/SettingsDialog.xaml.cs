@@ -1,9 +1,11 @@
 // Copyright (c) Files Community
 // Licensed under the MIT License.
 
+using CommunityToolkit.WinUI.Controls;
 using Files.App.Views.Settings;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 
 namespace Files.App.Dialogs
@@ -37,7 +39,7 @@ namespace Files.App.Dialogs
 			);
 			if (oldSelection is not null)
 				oldSelection.IsSelected = false;
-			
+
 			MainSettingsNavigationView.SelectedItem = targetSection;
 		}
 
@@ -81,6 +83,109 @@ namespace Files.App.Dialogs
 		private void CloseSettingsDialogButton_Click(object sender, RoutedEventArgs e)
 		{
 			Hide();
+		}
+
+		private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+		{
+			if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+			{
+				var query = sender.Text;
+				var results = SearchSettingsPages(query);
+
+				// Populate the dropdown with matching text content
+				sender.ItemsSource = results.ToList();
+			}
+		}
+
+		private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+		{
+			var query = args.QueryText;
+			var results = SearchSettingsPages(query);
+
+			// Handle submission logic (e.g., navigate to relevant page or highlight matching content)
+			if (results.Any())
+			{
+				var firstMatch = results.First();
+				// Perform a desired action with firstMatch or handle multiple results
+			}
+		}
+
+		private IEnumerable<string> SearchVisualTreeForText(DependencyObject parent, string query)
+		{
+			var results = new List<string>();
+
+			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+			{
+				var child = VisualTreeHelper.GetChild(parent, i);
+
+				if (child is FrameworkElement element)
+				{
+					// Check for TextBlock elements
+					if (element is TextBlock textBlock && textBlock.Text.Contains(query, StringComparison.OrdinalIgnoreCase))
+					{
+						results.Add(textBlock.Text);
+					}
+					// Check for SettingsCard headers
+					else if (element is SettingsCard settingsCard &&
+							 settingsCard.Header is string headerText &&
+							 headerText.Contains(query, StringComparison.OrdinalIgnoreCase))
+					{
+						results.Add(headerText);
+					}
+					// Check for SettingsExpander and its items
+					else if (element is SettingsExpander settingsExpander)
+					{
+						// Include the header of the SettingsExpander
+						if (settingsExpander.Header is string expanderHeader &&
+							expanderHeader.Contains(query, StringComparison.OrdinalIgnoreCase))
+						{
+							results.Add(expanderHeader);
+						}
+
+						// Search the visual tree of the expander
+						results.AddRange(SearchVisualTreeForText(settingsExpander, query));
+
+						// Enumerate items in the SettingsExpander.Items collection (even if collapsed)
+						foreach (var item in settingsExpander.Items)
+						{
+							if (item is SettingsCard subCard &&
+									 subCard.Header is string subCardHeader &&
+									 subCardHeader.Contains(query, StringComparison.OrdinalIgnoreCase))
+							{
+								results.Add(subCardHeader);
+							}
+						}
+					}
+				}
+
+				// Recursively search the visual tree
+				results.AddRange(SearchVisualTreeForText(child, query));
+			}
+
+			return results;
+		}
+
+
+		private IEnumerable<string> SearchSettingsPages(string query)
+		{
+			var results = new List<string>();
+
+			var settingsPages = new List<Page>
+			{
+				new AboutPage(),
+				new AppearancePage(),
+				new TagsPage(),
+				new DevToolsPage(),
+				new GeneralPage(),
+				new FoldersPage(),
+			};
+
+			foreach (var page in settingsPages)
+			{
+				results.AddRange(SearchVisualTreeForText(page, query));
+			}
+
+			return results;
 		}
 	}
 }
